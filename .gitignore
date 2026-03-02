@@ -1,1 +1,3 @@
-media/videos/*/partial_movie_files/*
+media/videos/*/*/partial_movie_files/*/*
+./media/videos/shockley_ramo/480p15/partial_movie_files/ShockleyRamoTheorem/
+./media/videos/shockley_ramo_strips/480p15/partial_movie_files/ShockleyRamoStripDetector/

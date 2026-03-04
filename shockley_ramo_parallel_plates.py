@@ -107,7 +107,7 @@ class ShockleyRamoTheorem(Scene):
         
         # Shockley-Ramo equation
         equation = MathTex(
-            r"I = q \cdot \vec{v} \cdot \vec{E}_w",
+            r"I = q \vec{v} \cdot \vec{E}_w",
             font_size=36
         ).to_corner(UL)
         

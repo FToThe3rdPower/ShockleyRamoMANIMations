@@ -217,18 +217,8 @@ class ShockleyRamoTheorem(Scene):
         charge_group.add_updater(update_current_reverse)
         
         # Charge moves back down
-        reverse_velocity = always_redraw(
-            lambda: Arrow(
-                charge_group.get_center(),
-                charge_group.get_center() + DOWN * 0.8,
-                buff=0,
-                color=GREEN,
-                stroke_width=3
-            )
-        )
-        
         self.play(
-            ReplacementTransform(velocity_arrow, reverse_velocity),
+            direction_tracker.animate.set_value(-1.0),
             run_time=0.3
         )
         

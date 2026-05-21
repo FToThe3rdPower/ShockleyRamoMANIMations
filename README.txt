@@ -4,3 +4,6 @@ Check out https://www.manim.community/ for the animation package.
 Open this folder in an IDE like VS Code which will source the .venv automatically so you can access the manim lib.
 To generate the animation video, run your python script like `$ manim -pql myManimaiton.py classNamedInsideTheScript`
 There are a lot of flags you can use to change the output: https://docs.manim.community/en/stable/guides/configuration.html
+
+For adding to slides, `$ manim -pr "960,384" myManimaiton.py classNamedInsideTheScript` will draw it so that it fits under a title bar, above the bottom bar.
+You have to be careful about the text being drawn out of the frame though...

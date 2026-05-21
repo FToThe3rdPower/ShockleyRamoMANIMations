@@ -1,50 +1,50 @@
 from manim import *
 import numpy as np
 
-class ShockleyRamoStripDetector_eMinus(Scene):
+class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
     """
-    Animation showing how a moving charge induces signals in multiple 
-    strip electrodes, allowing position reconstruction.
-    
-    This demonstrates the principle behind silicon strip detectors
+    Animation showing how a moving charge induces signals in multiple
+    anode electrodes, allowing position reconstruction.
+
+    This demonstrates the principle behind multi-anode detectors
     used in particle physics experiments.
     """
     
     def construct(self):
         # Parameters
-        num_strips = 5
-        strip_width = 1.0
-        strip_height = 0.25
-        strip_gap = 0.15  # Gap between strips
-        detector_depth = 3.0  # Distance from strips to ground
+        num_anodes = 5
+        anode_width = 1.0
+        anode_height = 0.25
+        anode_gap = 0.15  # Gap between anodes
+        detector_depth = 3.0  # Distance from anodes to ground
         charge_radius = 0.15
         
-        total_width = num_strips * strip_width + (num_strips - 1) * strip_gap
+        total_width = num_anodes * anode_width + (num_anodes - 1) * anode_gap
         
-        # Colors for each strip
-        strip_colors = [RED, ORANGE, YELLOW, GREEN, BLUE]
+        # Colors for each anode
+        anode_colors = [RED, ORANGE, YELLOW, GREEN, BLUE]
         
-        # Create strip electrodes
-        strips = VGroup()
-        strip_labels = VGroup()
-        for i in range(num_strips):
-            x_pos = -total_width/2 + strip_width/2 + i * (strip_width + strip_gap)
-            strip = Rectangle(
-                width=strip_width,
-                height=strip_height,
-                fill_color=strip_colors[i],
+        # Create anode electrodes
+        anodes = VGroup()
+        anode_labels = VGroup()
+        for i in range(num_anodes):
+            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
+            anode = Rectangle(
+                width=anode_width,
+                height=anode_height,
+                fill_color=anode_colors[i],
                 fill_opacity=0.8,
                 stroke_color=WHITE
             ).move_to([x_pos, detector_depth/2, 0])
-            strips.add(strip)
+            anodes.add(anode)
             
-            label = MathTex(f"S_{i+1}", font_size=20).next_to(strip, UP, buff=0.1)
-            strip_labels.add(label)
+            label = MathTex(f"A_{i+1}", font_size=20).next_to(anode, UP, buff=0.1)
+            anode_labels.add(label)
         
         # Ground plane
         ground = Rectangle(
             width=total_width + 1,
-            height=strip_height,
+            height=anode_height,
             fill_color=GRAY,
             fill_opacity=0.8,
             stroke_color=WHITE
@@ -54,7 +54,7 @@ class ShockleyRamoStripDetector_eMinus(Scene):
         # Create charge
         charge = Circle(
             radius=charge_radius,
-            fill_color=WHITE,
+            fill_color=YELLOW,
             fill_opacity=1,
             stroke_color=YELLOW,
             stroke_width=2
@@ -62,7 +62,7 @@ class ShockleyRamoStripDetector_eMinus(Scene):
         charge_symbol = MathTex("-", font_size=20, color=BLACK).move_to(charge)
         charge_group = VGroup(charge, charge_symbol)
         
-        # Charge trajectory: diagonal path across strips
+        # Charge trajectory: diagonal path across anodes
         start_pos = np.array([-total_width/2 - 0.5, -detector_depth/2 + 0.5, 0])
         end_pos = np.array([total_width/2 + 0.5, detector_depth/2 - 0.5, 0])
         charge_group.move_to(start_pos)
@@ -70,21 +70,21 @@ class ShockleyRamoStripDetector_eMinus(Scene):
         # Trajectory line (dashed)
         trajectory = DashedLine(start_pos, end_pos, color=WHITE, dash_length=0.1)
         
-        # Current trackers for each strip
-        current_trackers = [ValueTracker(0) for _ in range(num_strips)]
+        # Current trackers for each anode
+        current_trackers = [ValueTracker(0) for _ in range(num_anodes)]
         
-        # Current bar graphs for each strip
+        # Current bar graphs for each anode
         bar_width = 0.3
         max_bar_height = 1.5
         bar_base_y = -detector_depth/2 - 1.5
         
         def create_bar(i):
-            x_pos = -total_width/2 + strip_width/2 + i * (strip_width + strip_gap)
+            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
             height = max(0.01, abs(current_trackers[i].get_value()) * max_bar_height)
             bar = Rectangle(
                 width=bar_width,
                 height=height,
-                fill_color=strip_colors[i],
+                fill_color=anode_colors[i],
                 fill_opacity=0.8,
                 stroke_color=WHITE
             )
@@ -92,21 +92,21 @@ class ShockleyRamoStripDetector_eMinus(Scene):
             return bar
         
         current_bars = VGroup(*[
-            always_redraw(lambda i=i: create_bar(i)) for i in range(num_strips)
+            always_redraw(lambda i=i: create_bar(i)) for i in range(num_anodes)
         ])
         
         # Current value labels
         def create_current_label(i):
-            x_pos = -total_width/2 + strip_width/2 + i * (strip_width + strip_gap)
+            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
             val = -1*current_trackers[i].get_value() #-1 because it's an electron (negative charge)
             return MathTex(f"{val:.2f}", font_size=16).move_to([x_pos, bar_base_y - 0.3, 0])
         
         current_labels = VGroup(*[
-            always_redraw(lambda i=i: create_current_label(i)) for i in range(num_strips)
+            always_redraw(lambda i=i: create_current_label(i)) for i in range(num_anodes)
         ])
         
         # Title and equation
-        title = Text("Strip Detector: Position Sensing", font_size=28).to_edge(UP)
+        title = Text("Multi-Anode Detector: Position Sensing", font_size=28).to_edge(UP)
         equation = MathTex(
             r"I_k = q \vec{v} \cdot \vec{E}_{w,k}",
             font_size=28
@@ -115,7 +115,7 @@ class ShockleyRamoStripDetector_eMinus(Scene):
         # Legend for current display
         current_title = Text("Induced Currents", font_size=20).move_to([0, bar_base_y - 0.8, 0])
         
-        # Weighting field visualization (simplified - show field lines for middle strip only initially)
+        # Weighting field visualization (simplified - show field lines for middle anodes only initially)
         # We'll animate this later
         
         # Build scene
@@ -123,8 +123,8 @@ class ShockleyRamoStripDetector_eMinus(Scene):
         self.play(Write(equation), run_time=0.5)
         
         self.play(
-            *[Create(strip) for strip in strips],
-            *[Write(label) for label in strip_labels],
+            *[Create(anode) for anode in anodes],
+            *[Write(label) for label in anode_labels],
             run_time=1
         )
         
@@ -161,28 +161,28 @@ class ShockleyRamoStripDetector_eMinus(Scene):
         )
         self.play(GrowArrow(velocity_arrow), run_time=0.3)
         
-        # Function to calculate induced current on each strip
-        # Using simplified weighting field model for strip detectors
+        # Function to calculate induced current on each anode
+        # Using simplified weighting field model for multi-anode detectors
         def calculate_currents(charge_pos):
             currents = []
-            for i in range(num_strips):
-                strip_x = -total_width/2 + strip_width/2 + i * (strip_width + strip_gap)
-                strip_y = detector_depth/2
+            for i in range(num_anodes):
+                anode_x = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
+                anode_y = detector_depth/2
                 
-                # Distance from charge to strip center
-                dx = charge_pos[0] - strip_x
-                dy = charge_pos[1] - strip_y
+                # Distance from charge to anode center
+                dx = charge_pos[0] - anode_x
+                dy = charge_pos[1] - anode_y
                 
                 # Simplified weighting field model:
-                # Field is strongest directly below strip, falls off with distance
-                # E_w ~ 1/r^2 behavior, pointing toward strip
+                # Field is strongest directly below anode, falls off with distance
+                # E_w ~ 1/r^2 behavior, pointing toward anode
                 r_sq = dx**2 + dy**2 + 0.1  # Small offset to avoid singularity
                 
                 # Weighting field magnitude (simplified)
                 E_w_mag = 1.0 / (r_sq + 0.5)
                 
-                # Direction: toward the strip
-                E_w_dir = np.array([strip_x - charge_pos[0], strip_y - charge_pos[1], 0])
+                # Direction: toward the anode
+                E_w_dir = np.array([anode_x - charge_pos[0], anode_y - charge_pos[1], 0])
                 E_w_dir_norm = E_w_dir / (np.linalg.norm(E_w_dir) + 0.01)
                 
                 # Velocity direction
@@ -228,7 +228,7 @@ class ShockleyRamoStripDetector_eMinus(Scene):
         self.play(FadeOut(velocity_arrow), FadeOut(trajectory))
         
         recon_text = Text(
-            "Peak current → Charge passed closest to that strip!",
+            "Peak current → Charge passed closest to that anode!",
             font_size=24,
             color=YELLOW
         ).to_edge(DOWN, buff=0.3)
@@ -245,32 +245,32 @@ class ShockleyRamoWeightingFields_eMinus(Scene):
     
     def construct(self):
         # Parameters
-        num_strips = 3
-        strip_width = 1.5
-        strip_height = 0.3
-        strip_gap = 0.3
+        num_anodes = 3
+        anode_width = 1.5
+        anode_height = 0.3
+        anode_gap = 0.3
         detector_depth = 3.0
         
-        total_width = num_strips * strip_width + (num_strips - 1) * strip_gap
-        strip_colors = [RED, GREEN, BLUE]
+        total_width = num_anodes * anode_width + (num_anodes - 1) * anode_gap
+        anode_colors = [RED, GREEN, BLUE]
         
-        # Create strips
-        strips = VGroup()
-        for i in range(num_strips):
-            x_pos = -total_width/2 + strip_width/2 + i * (strip_width + strip_gap)
-            strip = Rectangle(
-                width=strip_width,
-                height=strip_height,
-                fill_color=strip_colors[i],
+        # Create anodes
+        anodes = VGroup()
+        for i in range(num_anodes):
+            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
+            anode = Rectangle(
+                width=anode_width,
+                height=anode_height,
+                fill_color=anode_colors[i],
                 fill_opacity=0.8,
                 stroke_color=WHITE
             ).move_to([x_pos, detector_depth/2, 0])
-            strips.add(strip)
+            anodes.add(anode)
         
         # Ground
         ground = Rectangle(
             width=total_width + 1,
-            height=strip_height,
+            height=anode_height,
             fill_color=GRAY,
             fill_opacity=0.8,
             stroke_color=WHITE
@@ -281,44 +281,44 @@ class ShockleyRamoWeightingFields_eMinus(Scene):
         
         self.play(Write(title))
         self.play(
-            *[Create(strip) for strip in strips],
+            *[Create(anode) for anode in anodes],
             Create(ground),
             run_time=1
         )
         
-        # Show weighting field for each strip one at a time
-        for idx in range(num_strips):
-            strip_x = -total_width/2 + strip_width/2 + idx * (strip_width + strip_gap)
+        # Show weighting field for each anode one at a time
+        for idx in range(num_anodes):
+            anode_x = -total_width/2 + anode_width/2 + idx * (anode_width + anode_gap)
             
             # Explanation
             explanation = VGroup(
                 MathTex(f"\\phi_{{w,{idx+1}}}:", font_size=28),
-                Text(f"Strip {idx+1} at V=1", font_size=20),
+                Text(f"Anode {idx+1} at V=1", font_size=20),
                 Text("Others at V=0", font_size=20),
             ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
             explanation.to_corner(UL).shift(DOWN * 0.8)
             
-            # Highlight the active strip
-            highlight = strips[idx].copy()
+            # Highlight the active anode
+            highlight = anodes[idx].copy()
             highlight.set_fill(WHITE, opacity=0.3)
             highlight.set_stroke(WHITE, width=3)
             
-            # Create field lines for this strip's weighting field
+            # Create field lines for this anode's weighting field
             field_lines = VGroup()
-            for dx in np.linspace(-strip_width/3, strip_width/3, 3):
+            for dx in np.linspace(-anode_width/3, anode_width/3, 3):
                 for frac in [0.2, 0.4, 0.6, 0.8]:
-                    y_start = -detector_depth/2 + strip_height/2 + 0.1
-                    y_end = detector_depth/2 - strip_height/2 - 0.1
+                    y_start = -detector_depth/2 + anode_height/2 + 0.1
+                    y_end = detector_depth/2 - anode_height/2 - 0.1
                     y = y_start + frac * (y_end - y_start)
                     
-                    # Field lines curve toward the active strip
-                    x_start = strip_x + dx * (1 - frac * 0.5)
+                    # Field lines curve toward the active anode
+                    x_start = anode_x + dx * (1 - frac * 0.5)
                     
                     arrow = Arrow(
                         start=[x_start, y - 0.2, 0],
-                        end=[x_start + (strip_x - x_start) * 0.1, y + 0.2, 0],
+                        end=[x_start + (anode_x - x_start) * 0.1, y + 0.2, 0],
                         buff=0,
-                        color=strip_colors[idx],
+                        color=anode_colors[idx],
                         stroke_width=2,
                         max_tip_length_to_length_ratio=0.3
                     )
@@ -327,16 +327,16 @@ class ShockleyRamoWeightingFields_eMinus(Scene):
             # Add some curved field lines from sides
             for side in [-1, 1]:
                 for frac in [0.3, 0.6]:
-                    y_start = -detector_depth/2 + strip_height/2 + 0.1
-                    y_end = detector_depth/2 - strip_height/2 - 0.1
+                    y_start = -detector_depth/2 + anode_height/2 + 0.1
+                    y_end = detector_depth/2 - anode_height/2 - 0.1
                     y = y_start + frac * (y_end - y_start)
-                    x = strip_x + side * (strip_width/2 + 0.5)
+                    x = anode_x + side * (anode_width/2 + 0.5)
                     
                     arrow = Arrow(
                         start=[x, y - 0.15, 0],
                         end=[x - side * 0.15, y + 0.15, 0],
                         buff=0,
-                        color=strip_colors[idx],
+                        color=anode_colors[idx],
                         stroke_width=1.5,
                         max_tip_length_to_length_ratio=0.3
                     )
@@ -345,8 +345,8 @@ class ShockleyRamoWeightingFields_eMinus(Scene):
             field_label = MathTex(
                 f"\\vec{{E}}_{{w,{idx+1}}}",
                 font_size=28,
-                color=strip_colors[idx]
-            ).next_to(strips[idx], RIGHT, buff=0.5)
+                color=anode_colors[idx]
+            ).next_to(anodes[idx], RIGHT, buff=0.5)
             
             self.play(
                 Write(explanation),
@@ -372,9 +372,9 @@ class ShockleyRamoWeightingFields_eMinus(Scene):
         
         # Final message
         final_text = VGroup(
-            Text("Each strip has its own weighting field", font_size=24),
+            Text("Each anode has its own weighting field", font_size=24),
             MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w,k}", font_size=28),
-            Text("→ Different strips see different currents!", font_size=24, color=YELLOW),
+            Text("→ Different anodes see different currents!", font_size=24, color=YELLOW),
         ).arrange(DOWN, buff=0.3)
         final_text.to_edge(DOWN, buff=0.5)
         
@@ -383,6 +383,4 @@ class ShockleyRamoWeightingFields_eMinus(Scene):
 
 
 if __name__ == "__main__":
-    # Render with: manim -pql shockley_ramo_strips_e-.py ShockleyRamoStripDetector_eMinus
-    # Or: manim -pql shockley_ramo_strips_e-.py ShockleyRamoWeightingFields_eMinus
     pass

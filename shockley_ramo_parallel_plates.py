@@ -112,10 +112,11 @@ class ShockleyRamoTheorem(Scene):
         ).to_corner(UL, buff=2.0)
         
         # Velocity arrow (will be animated)
+        direction_tracker = ValueTracker(1.0)
         velocity_arrow = always_redraw(
             lambda: Arrow(
                 charge_group.get_center(),
-                charge_group.get_center() + UP * 0.8,
+                charge_group.get_center() + UP * 0.8 * direction_tracker.get_value(),
                 buff=0,
                 color=GREEN,
                 stroke_width=3

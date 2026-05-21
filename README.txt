@@ -7,3 +7,6 @@ There are a lot of flags you can use to change the output: https://docs.manim.co
 
 For adding to slides, `$ manim -pr "960,384" myManimaiton.py classNamedInsideTheScript` will draw it so that it fits under a title bar, above the bottom bar.
 You have to be careful about the text being drawn out of the frame though...
+
+The last renderings I did for my slides used `$ manim -r "960,384" --format=gif --fps=15 shockley_ramo_parallel_plates.py ShockleyRamoTheorem`
+The fps=15 is because if you don't set it the gif will take an entire minute to play instead of the 22 seconds the mp4 video takes.

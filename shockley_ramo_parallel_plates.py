@@ -109,7 +109,7 @@ class ShockleyRamoTheorem(Scene):
         equation = MathTex(
             r"I = q \vec{v} \cdot \vec{E}_w",
             font_size=36
-        ).to_corner(UL)
+        ).to_corner(UL, buff=2.0)
         
         # Velocity arrow (will be animated)
         velocity_arrow = always_redraw(
@@ -174,7 +174,7 @@ class ShockleyRamoTheorem(Scene):
             # Normalized to show ~1 when charge is moving
             y_pos = charge_group.get_center()[1]
             if start_y < y_pos < end_y:
-                current_tracker.set_value(0.8)  # Constant current for uniform field
+                current_tracker.set_value(1)  # Constant current for uniform field
             else:
                 current_tracker.set_value(0)
         
@@ -194,7 +194,7 @@ class ShockleyRamoTheorem(Scene):
         
         # Show what happens when charge stops
         stop_text = Text("Charge stops → No current!", font_size=28, color=RED)
-        stop_text.to_corner(DR)
+        stop_text.next_to(bottom_label, DOWN)
         self.play(Write(stop_text), run_time=1)
         
         self.wait(1)
@@ -203,13 +203,13 @@ class ShockleyRamoTheorem(Scene):
         self.play(FadeOut(stop_text))
         
         reverse_text = Text("Reverse direction → Reverse current", font_size=28, color=ORANGE)
-        reverse_text.to_corner(DR)
+        reverse_text.next_to(bottom_label, DOWN)
         self.play(Write(reverse_text))
         
         def update_current_reverse(mob):
             y_pos = charge_group.get_center()[1]
             if start_y < y_pos < end_y:
-                current_tracker.set_value(-0.8)  # Negative current
+                current_tracker.set_value(-1)  # Negative current
             else:
                 current_tracker.set_value(0)
         
@@ -300,5 +300,4 @@ class ShockleyRamoTheorem(Scene):
 
 
 if __name__ == "__main__":
-    # To render: manim -pql shockley_ramo.py ShockleyRamoTheorem
     pass

@@ -234,60 +234,60 @@ class ShockleyRamoTheorem(Scene):
         self.wait(2)
 
 
-# class ShockleyRamoDetailed(Scene):
-#     """
-#     More detailed version showing the weighting potential concept.
-#     """
+class ShockleyRamoDetailed(Scene):
+    """
+    More detailed version showing the weighting potential concept.
+    """
     
-#     def construct(self):
-#         # Title
-#         title = Text("Shockley-Ramo Theorem", font_size=48)
-#         self.play(Write(title))
-#         self.wait(1)
-#         self.play(title.animate.to_edge(UP))
+    def construct(self):
+        # Title
+        title = Text("Shockley-Ramo Theorem", font_size=32)
+        self.play(Write(title))
+        self.wait(1)
+        self.play(title.animate.move_to([0, 2.3, 0]))
         
-#         # Explanation
-#         explanation = VGroup(
-#             Text("The induced current on an electrode is:", font_size=28),
-#             MathTex(r"I = -q \vec{v} \cdot \vec{E}_w", font_size=40),
-#             Text("where:", font_size=24),
-#             MathTex(r"q = \text{charge}", font_size=28),
-#             MathTex(r"\vec{v} = \text{charge velocity}", font_size=28),
-#             MathTex(r"\vec{E}_w = -\nabla \phi_w = \text{weighting field}", font_size=28),
-#         ).arrange(DOWN, aligned_edge=LEFT, buff=0.3)
-#         explanation.next_to(title, DOWN, buff=0.5)
+        # Explanation
+        explanation = VGroup(
+            Text("The induced current on an electrode is:", font_size=22),
+            MathTex(r"I = -q \vec{v} \cdot \vec{E}_w", font_size=32),
+            Text("where:", font_size=20),
+            MathTex(r"q = \text{charge}", font_size=22),
+            MathTex(r"\vec{v} = \text{charge velocity}", font_size=22),
+            MathTex(r"\vec{E}_w = -\nabla \phi_w = \text{weighting field}", font_size=22),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.25)
+        explanation.next_to(title, DOWN, buff=0.4)
         
-#         for item in explanation:
-#             self.play(Write(item), run_time=0.8)
+        for item in explanation:
+            self.play(Write(item), run_time=0.8)
         
-#         self.wait(2)
+        self.wait(2)
         
-#         # Clear and show weighting potential concept
-#         self.play(FadeOut(explanation))
+        # Clear and show weighting potential concept
+        self.play(FadeOut(explanation))
         
-#         concept = VGroup(
-#             Text("Weighting Potential φ_w:", font_size=32, color=RED),
-#             Text("• Set sensing electrode to V = 1", font_size=24),
-#             Text("• Set all other electrodes to V = 0", font_size=24),
-#             Text("• Solve Laplace's equation ∇²φ_w = 0", font_size=24),
-#         ).arrange(DOWN, aligned_edge=LEFT, buff=0.2)
-#         concept.next_to(title, DOWN, buff=0.5)
+        concept = VGroup(
+            Text("Weighting Potential φ_w:", font_size=24, color=RED),
+            Text("• Set sensing electrode to V = 1", font_size=20),
+            Text("• Set all other electrodes to V = 0", font_size=20),
+            Text("• Solve Laplace's equation ∇²φ_w = 0", font_size=20),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.2)
+        concept.next_to(title, DOWN, buff=0.4)
         
-#         for item in concept:
-#             self.play(Write(item), run_time=0.6)
+        for item in concept:
+            self.play(Write(item), run_time=0.6)
         
-#         self.wait(2)
+        self.wait(2)
         
-#         # Key insight
-#         insight = VGroup(
-#             Text("Key Insight:", font_size=32, color=GREEN),
-#             Text("Current depends ONLY on charge motion,", font_size=26),
-#             Text("NOT on the actual electric field!", font_size=26),
-#         ).arrange(DOWN, buff=0.2)
-#         insight.to_edge(DOWN, buff=1)
+        # Key insight
+        insight = VGroup(
+            Text("Key Insight:", font_size=24, color=GREEN),
+            Text("Current depends ONLY on charge motion,", font_size=20),
+            Text("NOT on the actual electric field!", font_size=20),
+        ).arrange(DOWN, buff=0.2)
+        insight.move_to([0, -2.5, 0])
         
-#         self.play(Write(insight), run_time=2)
-#         self.wait(3)
+        self.play(Write(insight), run_time=2)
+        self.wait(3)
 
 
 if __name__ == "__main__":

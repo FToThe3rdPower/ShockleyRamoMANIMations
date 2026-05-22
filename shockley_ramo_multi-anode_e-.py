@@ -18,6 +18,7 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         anode_gap = 0.15  # Gap between anodes
         detector_depth = 3.0  # Distance from anodes to ground
         charge_radius = 0.15
+        right_offset = 2.5
         
         total_width = num_anodes * anode_width + (num_anodes - 1) * anode_gap
         
@@ -28,7 +29,7 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         anodes = VGroup()
         anode_labels = VGroup()
         for i in range(num_anodes):
-            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
+            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap) + right_offset
             anode = Rectangle(
                 width=anode_width,
                 height=anode_height,
@@ -48,7 +49,7 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
             fill_color=GRAY,
             fill_opacity=0.8,
             stroke_color=WHITE
-        ).move_to([0, -detector_depth/2, 0])
+        ).move_to([right_offset, -detector_depth/2, 0])
         ground_label = Text("Ground", font_size=20).next_to(ground, DOWN)
         
         # Create charge
@@ -63,8 +64,8 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         charge_group = VGroup(charge, charge_symbol)
         
         # Charge trajectory: diagonal path across anodes
-        start_pos = np.array([-total_width/2 - 0.5, -detector_depth/2 + 0.5, 0])
-        end_pos = np.array([total_width/2 + 0.5, detector_depth/2 - 0.5, 0])
+        start_pos = np.array([-total_width/2 - 0.5 + right_offset, -detector_depth/2 + 0.5, 0])
+        end_pos = np.array([total_width/2 + 0.5 +right_offset, detector_depth/2 - 0.5, 0])
         charge_group.move_to(start_pos)
         
         # Trajectory line (dashed)
@@ -73,13 +74,17 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         # Current trackers for each anode
         current_trackers = [ValueTracker(0) for _ in range(num_anodes)]
         
-        # Current bar graphs for each anode
+        # Current bar graphs for each anode (right panel)
         bar_width = 0.3
-        max_bar_height = 1.5
-        bar_base_y = -detector_depth/2 - 1.5
+        bar_gap = 0.3
+        max_bar_height = 2
+        bar_base_y = -max_bar_height / 2  # Vertically centered in frame
+        bar_x_offset = -2.0
+        current_label_offset = -4.15
         
         def create_bar(i):
-            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
+            #x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap) + bar_x_offset
+            x_pos = -total_width/2 - anode_width/2 + i * (bar_width + bar_gap) + bar_x_offset
             height = max(0.01, abs(current_trackers[i].get_value()) * max_bar_height)
             bar = Rectangle(
                 width=bar_width,
@@ -97,7 +102,8 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         
         # Current value labels
         def create_current_label(i):
-            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
+            #x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap) + bar_x_offset
+            x_pos = -total_width/2 - anode_width/2 + i * (bar_width + bar_gap) + bar_x_offset - 0.01
             val = -1*current_trackers[i].get_value() #-1 because it's an electron (negative charge)
             return MathTex(f"{val:.2f}", font_size=16).move_to([x_pos, bar_base_y - 0.3, 0])
         
@@ -105,22 +111,19 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
             always_redraw(lambda i=i: create_current_label(i)) for i in range(num_anodes)
         ])
         
-        # Title and equation
-        title = Text("Multi-Anode Detector: Position Sensing", font_size=28).to_edge(UP)
-        equation = MathTex(
-            r"I_k = q \vec{v} \cdot \vec{E}_{w,k}",
-            font_size=28
-        ).next_to(title, DOWN)
+        # equation on the left of the itle which is just above anodes (center); 
+        equation = MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w,k}", font_size=28).move_to([-5.0, 1.76, 0])
+        title = Text("Multi-Anode Detector: Position Sensing", font_size=20).next_to(anode_labels, UP, buff=0.15)
         
-        # Legend for current display
-        current_title = Text("Induced Currents", font_size=20).move_to([0, bar_base_y - 0.8, 0])
+        # Legend for current display (right panel, above bars)
+        current_title = Text("Induced Currents", font_size=20).move_to([current_label_offset, bar_base_y + max_bar_height, 0])
         
         # Weighting field visualization (simplified - show field lines for middle anodes only initially)
         # We'll animate this later
         
         # Build scene
-        self.play(Write(title), run_time=0.5)
         self.play(Write(equation), run_time=0.5)
+        self.play(Write(title), run_time=0.5)
         
         self.play(
             *[Create(anode) for anode in anodes],
@@ -166,37 +169,37 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         def calculate_currents(charge_pos):
             currents = []
             for i in range(num_anodes):
-                anode_x = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
+                anode_x = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap) + right_offset
                 anode_y = detector_depth/2
-                
+
                 # Distance from charge to anode center
                 dx = charge_pos[0] - anode_x
                 dy = charge_pos[1] - anode_y
-                
+
                 # Simplified weighting field model:
                 # Field is strongest directly below anode, falls off with distance
                 # E_w ~ 1/r^2 behavior, pointing toward anode
                 r_sq = dx**2 + dy**2 + 0.1  # Small offset to avoid singularity
-                
+
                 # Weighting field magnitude (simplified)
                 E_w_mag = 1.0 / (r_sq + 0.5)
-                
+
                 # Direction: toward the anode
                 E_w_dir = np.array([anode_x - charge_pos[0], anode_y - charge_pos[1], 0])
                 E_w_dir_norm = E_w_dir / (np.linalg.norm(E_w_dir) + 0.01)
-                
+
                 # Velocity direction
                 v_dir = normalize(end_pos - start_pos)
-                
+
                 # Induced current: I = q * v · E_w
                 current = np.dot(v_dir, E_w_dir_norm) * E_w_mag
-                
+
                 # Only show significant currents when charge is in detector region
-                if charge_pos[0] < -total_width/2 - 0.3 or charge_pos[0] > total_width/2 + 0.3:
+                if charge_pos[0] < -total_width/2 - 0.3 + right_offset or charge_pos[0] > total_width/2 + 0.3 + right_offset:
                     current = 0
                 if charge_pos[1] < -detector_depth/2 + 0.3 or charge_pos[1] > detector_depth/2 - 0.3:
                     current *= 0.3
-                
+
                 currents.append(current)
             return currents
         
@@ -276,8 +279,8 @@ class ShockleyRamoWeightingFields_eMinus(Scene):
             stroke_color=WHITE
         ).move_to([0, -detector_depth/2, 0])
         
-        # Title
-        title = Text("Weighting Fields for Each Electrode", font_size=32).to_edge(UP)
+        # Title just above anodes, matching the 960x384 layout
+        title = Text("Weighting Fields for Each Electrode", font_size=24).next_to(anodes, UP, buff=0.4)
         
         self.play(Write(title))
         self.play(
@@ -376,7 +379,7 @@ class ShockleyRamoWeightingFields_eMinus(Scene):
             MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w,k}", font_size=28),
             Text("→ Different anodes see different currents!", font_size=24, color=YELLOW),
         ).arrange(DOWN, buff=0.3)
-        final_text.to_edge(DOWN, buff=0.5)
+        final_text.move_to([0, -2.5, 0])
         
         self.play(Write(final_text), run_time=2)
         self.wait(2)

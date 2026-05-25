@@ -13,12 +13,12 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
     def construct(self):
         # Parameters
         num_anodes = 5
-        anode_width = 1.0
-        anode_height = 0.25
-        anode_gap = 0.15  # Gap between anodes
-        detector_depth = 3.0  # Distance from anodes to ground
-        charge_radius = 0.15
-        right_offset = 2.5
+        anode_width = 1.5
+        anode_height = 0.35
+        anode_gap = 0.25
+        detector_depth = 4.0
+        charge_radius = 0.2
+        right_offset = 1.5
         
         total_width = num_anodes * anode_width + (num_anodes - 1) * anode_gap
         
@@ -39,7 +39,7 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
             ).move_to([x_pos, detector_depth/2, 0])
             anodes.add(anode)
             
-            label = MathTex(f"A_{i+1}", font_size=20).next_to(anode, UP, buff=0.1)
+            label = MathTex(f"A_{i+1}", font_size=24).next_to(anode, UP, buff=0.1)
             anode_labels.add(label)
         
         # Ground plane
@@ -50,7 +50,7 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
             fill_opacity=0.8,
             stroke_color=WHITE
         ).move_to([right_offset, -detector_depth/2, 0])
-        ground_label = Text("Ground", font_size=20).next_to(ground, DOWN)
+        ground_label = Text("Ground", font_size=22).next_to(ground, DOWN, buff=0.1)
         
         # Create charge
         charge = Circle(
@@ -75,12 +75,12 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         current_trackers = [ValueTracker(0) for _ in range(num_anodes)]
         
         # Current bar graphs for each anode (right panel)
-        bar_width = 0.3
-        bar_gap = 0.3
-        max_bar_height = 2
-        bar_base_y = -max_bar_height / 2  # Vertically centered in frame
-        bar_x_offset = -2.0
-        current_label_offset = -4.15
+        bar_width = 0.45
+        bar_gap = 0.35
+        max_bar_height = 3.0
+        bar_base_y = -max_bar_height / 2
+        bar_x_offset = -2.6
+        current_label_offset = -6.0
         
         def create_bar(i):
             #x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap) + bar_x_offset
@@ -105,18 +105,18 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
             #x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap) + bar_x_offset
             x_pos = -total_width/2 - anode_width/2 + i * (bar_width + bar_gap) + bar_x_offset - 0.01
             val = -1*current_trackers[i].get_value() #-1 because it's an electron (negative charge)
-            return MathTex(f"{val:.2f}", font_size=16).move_to([x_pos, bar_base_y - 0.3, 0])
+            return MathTex(f"{val:.2f}", font_size=20).move_to([x_pos, bar_base_y - 0.35, 0])
         
         current_labels = VGroup(*[
             always_redraw(lambda i=i: create_current_label(i)) for i in range(num_anodes)
         ])
         
         # equation on the left of the itle which is just above anodes (center); 
-        equation = MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w,k}", font_size=28).move_to([-5.0, 1.76, 0])
-        title = Text("Multi-Anode Detector: Position Sensing", font_size=20).next_to(anode_labels, UP, buff=0.15)
+        equation = MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w,k}", font_size=32).move_to([-6.0, 2.4, 0])
+        title = Text("Multi-Anode Detector: Position Sensing", font_size=22).next_to(anode_labels, UP, buff=0.1)
         
         # Legend for current display (right panel, above bars)
-        current_title = Text("Induced Currents", font_size=20).move_to([current_label_offset, bar_base_y + max_bar_height, 0])
+        current_title = Text("Induced Currents", font_size=22).move_to([current_label_offset, bar_base_y + max_bar_height + 0.15, 0])
         
         # Weighting field visualization (simplified - show field lines for middle anodes only initially)
         # We'll animate this later
@@ -155,7 +155,7 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         velocity_arrow = always_redraw(
             lambda: Arrow(
                 charge_group.get_center(),
-                charge_group.get_center() + normalize(end_pos - start_pos) * 0.6,
+                charge_group.get_center() + normalize(end_pos - start_pos) * 0.8,
                 buff=0,
                 color=GREEN,
                 stroke_width=2,
@@ -234,154 +234,156 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
             "Peak current → Charge passed closest to that anode!",
             font_size=24,
             color=YELLOW
-        ).to_edge(DOWN, buff=0.3)
+        ).move_to([current_label_offset, bar_base_y - 0.7, 0])
         
         self.play(Write(recon_text), run_time=1)
         self.wait(2)
 
 
-class ShockleyRamoWeightingFields_eMinus(Scene):
+
+class ShockleyRamoWeightingPotential_Center(Scene):
     """
-    Show the weighting field concept for multiple electrodes.
-    Each electrode has its own weighting field.
+    Equipotential lines of the weighting potential φ_w for the center anode
+    of a 3-anode detector with equal-width electrodes: center at V=1,
+    left and right grounded (V=0), ground plane at V=0. Uses Fourier cosine
+    series satisfying Laplace's equation with Dirichlet BCs at x=±L and y=-d/2.
     """
-    
+
     def construct(self):
-        # Parameters
-        num_anodes = 3
-        anode_width = 1.5
-        anode_height = 0.3
-        anode_gap = 0.3
-        detector_depth = 3.0
-        
-        total_width = num_anodes * anode_width + (num_anodes - 1) * anode_gap
-        anode_colors = [RED, GREEN, BLUE]
-        
-        # Create anodes
-        anodes = VGroup()
-        for i in range(num_anodes):
-            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap)
-            anode = Rectangle(
-                width=anode_width,
-                height=anode_height,
-                fill_color=anode_colors[i],
-                fill_opacity=0.8,
-                stroke_color=WHITE
-            ).move_to([x_pos, detector_depth/2, 0])
-            anodes.add(anode)
-        
-        # Ground
-        ground = Rectangle(
-            width=total_width + 1,
-            height=anode_height,
-            fill_color=GRAY,
-            fill_opacity=0.8,
-            stroke_color=WHITE
-        ).move_to([0, -detector_depth/2, 0])
-        
-        # Title just above anodes, matching the 960x384 layout
-        title = Text("Weighting Fields for Each Electrode", font_size=24).next_to(anodes, UP, buff=0.4)
-        
-        self.play(Write(title))
-        self.play(
-            *[Create(anode) for anode in anodes],
-            Create(ground),
-            run_time=1
+        anode_width  = 3.5
+        anode_gap    = 0.7
+        anode_height = 0.4
+        d = 4.0
+        L = (3 * anode_width + 2 * anode_gap) / 2   # = 5.95; detector spans x: -L to +L
+
+        w_sense = anode_width   # equal-width: sensing same as grounded flanks
+        gap     = anode_gap
+
+        # Center (sensing) electrode at x=0
+        sense_anode = Rectangle(
+            width=w_sense, height=anode_height,
+            fill_color=YELLOW, fill_opacity=0.9,
+            stroke_color=WHITE, stroke_width=2,
+        ).move_to([0, d/2, 0])
+
+        # Grounded flanks — equal width, separated by gap from center electrode
+        flank_center = anode_width + gap   # = 4.2
+        left_anode = Rectangle(
+            width=w_sense, height=anode_height,
+            fill_color=GRAY, fill_opacity=0.5,
+            stroke_color=WHITE, stroke_width=1,
+        ).move_to([-flank_center, d/2, 0])
+        right_anode = Rectangle(
+            width=w_sense, height=anode_height,
+            fill_color=GRAY, fill_opacity=0.5,
+            stroke_color=WHITE, stroke_width=1,
+        ).move_to([+flank_center, d/2, 0])
+
+        anodes = VGroup(left_anode, sense_anode, right_anode)
+        anode_labels = VGroup(
+            Text("Ground", font_size=20, color=GRAY).next_to(left_anode,  UP, buff=0.08),
+            Text("Ground", font_size=20, color=GRAY).next_to(right_anode, UP, buff=0.08),
         )
-        
-        # Show weighting field for each anode one at a time
-        for idx in range(num_anodes):
-            anode_x = -total_width/2 + anode_width/2 + idx * (anode_width + anode_gap)
-            
-            # Explanation
-            explanation = VGroup(
-                MathTex(f"\\phi_{{w,{idx+1}}}:", font_size=28),
-                Text(f"Anode {idx+1} at V=1", font_size=20),
-                Text("Others at V=0", font_size=20),
-            ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
-            explanation.to_corner(UL).shift(DOWN * 0.8)
-            
-            # Highlight the active anode
-            highlight = anodes[idx].copy()
-            highlight.set_fill(WHITE, opacity=0.3)
-            highlight.set_stroke(WHITE, width=3)
-            
-            # Create field lines for this anode's weighting field
-            field_lines = VGroup()
-            for dx in np.linspace(-anode_width/3, anode_width/3, 3):
-                for frac in [0.2, 0.4, 0.6, 0.8]:
-                    y_start = -detector_depth/2 + anode_height/2 + 0.1
-                    y_end = detector_depth/2 - anode_height/2 - 0.1
-                    y = y_start + frac * (y_end - y_start)
-                    
-                    # Field lines curve toward the active anode
-                    x_start = anode_x + dx * (1 - frac * 0.5)
-                    
-                    arrow = Arrow(
-                        start=[x_start, y - 0.2, 0],
-                        end=[x_start + (anode_x - x_start) * 0.1, y + 0.2, 0],
-                        buff=0,
-                        color=anode_colors[idx],
-                        stroke_width=2,
-                        max_tip_length_to_length_ratio=0.3
-                    )
-                    field_lines.add(arrow)
-            
-            # Add some curved field lines from sides
-            for side in [-1, 1]:
-                for frac in [0.3, 0.6]:
-                    y_start = -detector_depth/2 + anode_height/2 + 0.1
-                    y_end = detector_depth/2 - anode_height/2 - 0.1
-                    y = y_start + frac * (y_end - y_start)
-                    x = anode_x + side * (anode_width/2 + 0.5)
-                    
-                    arrow = Arrow(
-                        start=[x, y - 0.15, 0],
-                        end=[x - side * 0.15, y + 0.15, 0],
-                        buff=0,
-                        color=anode_colors[idx],
-                        stroke_width=1.5,
-                        max_tip_length_to_length_ratio=0.3
-                    )
-                    field_lines.add(arrow)
-            
-            field_label = MathTex(
-                f"\\vec{{E}}_{{w,{idx+1}}}",
-                font_size=28,
-                color=anode_colors[idx]
-            ).next_to(anodes[idx], RIGHT, buff=0.5)
-            
-            self.play(
-                Write(explanation),
-                Create(highlight),
-                run_time=0.5
+
+        # Ground plane
+        ground = Rectangle(
+            width=2*L, height=anode_height,
+            fill_color=GRAY, fill_opacity=0.7,
+            stroke_color=WHITE, stroke_width=1,
+        ).move_to([0, -d/2, 0])
+        ground_label = Text("Ground", font_size=20).next_to(ground, DOWN, buff=0.1)
+
+        title = Text(
+            "Weighting Potential: Center Anode", font_size=26
+        ).next_to(anode_labels, UP, buff=0.1)
+
+        # Fourier cosine series for finite detector with Dirichlet BCs at x=±L, y=-d/2.
+        # Eigenfunctions: cos(k_m * x),  k_m = (2m-1)*π/(2L)
+        # phi(x,y) = Σ_m C_m * cos(k_m*x) * sinh(k_m*(y+d/2)) / sinh(k_m*d)
+        # C_m = [4/((2m-1)π)] * sin((2m-1)*π*w_sense/(4L))
+        N_terms = 80
+        ms      = np.arange(1, N_terms + 1, dtype=float)
+        kms     = (2*ms - 1) * np.pi / (2*L)
+        C_ms    = (4 / ((2*ms - 1) * np.pi)) * np.sin((2*ms - 1) * np.pi * w_sense / (4*L))
+        sigmas  = np.sinc((2*ms - 1) / (2*N_terms))  # Lanczos sigma: reduces Gibbs ringing
+        C_ms   *= sigmas
+
+        def phi_w(x, y):
+            kms_y_d2 = kms * (y + d/2)
+            kms_d    = kms * d
+            ratios = np.where(
+                kms_d > 20,
+                np.exp(kms_y_d2 - kms_d),
+                np.sinh(kms_y_d2) / np.sinh(kms_d),
             )
-            
-            self.play(
-                *[GrowArrow(arrow) for arrow in field_lines],
-                Write(field_label),
-                run_time=1
+            return float(np.sum(C_ms * np.cos(kms * x) * ratios))
+
+        # Contour levels spanning the weighting potential range from furthest to closest (least to greatest potential)
+        levels = [0.007, 0.02, 0.05, 0.1, 0.2, 0.35, 0.55, 0.75] #[0.002, 0.007, 0.02, 0.05, 0.1, 0.2, 0.35, 0.55, 0.75]
+
+        # Logarithmic color bar: 10^-3 to 10^0
+        phi_log_min, phi_log_max = -3.0, 0.0
+        bar_h, bar_w_px, n_seg = 3.5, 0.4, 40
+        bar_x = -8.5
+        bar_colors = color_gradient([BLUE_C, TEAL_C, GREEN_C, YELLOW, ORANGE, RED_C], n_seg)
+        color_bar = VGroup(*[
+            Rectangle(
+                width=bar_w_px, height=bar_h / n_seg,
+                fill_color=bar_colors[j], fill_opacity=0.9, stroke_width=0,
+            ).move_to([bar_x, -bar_h/2 + (j + 0.5) * bar_h / n_seg, 0])
+            for j in range(n_seg)
+        ])
+
+        # Decade tick marks at 10^-3, 10^-2, 10^-1, 10^0
+        bar_ticks = VGroup()
+        bar_tick_labels = VGroup()
+        for exp in range(-3, 1):
+            y_tick = -bar_h/2 + (exp - phi_log_min) / (phi_log_max - phi_log_min) * bar_h
+            tick = Line(
+                [bar_x + bar_w_px/2, y_tick, 0],
+                [bar_x + bar_w_px/2 + 0.25, y_tick, 0],
+                color=WHITE, stroke_width=2,
             )
-            
-            self.wait(1.5)
-            
-            self.play(
-                FadeOut(explanation),
-                FadeOut(highlight),
-                FadeOut(field_lines),
-                FadeOut(field_label),
-                run_time=0.5
+            lbl = MathTex(f"10^{{{exp}}}", font_size=24).next_to(tick, RIGHT, buff=0.08)
+            bar_ticks.add(tick)
+            bar_tick_labels.add(lbl)
+
+        bar_title = MathTex(r"\phi_{w,2}", font_size=32).next_to(color_bar, UP, buff=0.2)
+
+        # Assign contour colors based on log-scale position of each level
+        def level_to_color(lv):
+            t = float(np.clip((np.log10(lv) - phi_log_min) / (phi_log_max - phi_log_min), 0, 1))
+            return color_gradient([BLUE_C, TEAL_C, GREEN_C, YELLOW, ORANGE, RED_C], 101)[int(t * 100)]
+
+        contour_colors = [level_to_color(lv) for lv in levels]
+
+        equipotentials = [
+            ImplicitFunction(
+                lambda x, y, lv=level: phi_w(x, y) - lv,
+                x_range=[-L, L],
+                y_range=[-d/2, d/2],
+                color=contour_colors[i],
+                stroke_width=3,
             )
-        
-        # Final message
-        final_text = VGroup(
-            Text("Each anode has its own weighting field", font_size=24),
-            MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w,k}", font_size=28),
-            Text("→ Different anodes see different currents!", font_size=24, color=YELLOW),
-        ).arrange(DOWN, buff=0.3)
-        final_text.move_to([0, -2.5, 0])
-        
-        self.play(Write(final_text), run_time=2)
+            for i, level in enumerate(levels)
+        ]
+
+        # Build scene
+        self.play(Write(title), run_time=0.5)
+        self.play(
+            Create(color_bar),
+            Create(bar_ticks), Write(bar_tick_labels), Write(bar_title),
+            run_time=0.8,
+        )
+        self.play(
+            *[Create(a) for a in anodes],
+            *[Write(l) for l in anode_labels],
+            Create(ground), Write(ground_label),
+            run_time=1,
+        )
+        # Animate from highest potential (tight, near sensing anode) outward to lowest
+        for curve in reversed(equipotentials):
+            self.play(Create(curve), run_time=0.3)
         self.wait(2)
 
 

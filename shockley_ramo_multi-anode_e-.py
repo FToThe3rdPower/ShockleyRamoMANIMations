@@ -68,8 +68,8 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         end_pos = np.array([total_width/2 + 0.5 +right_offset, detector_depth/2 - 0.5, 0])
         charge_group.move_to(start_pos)
         
-        # Trajectory line (dashed)
-        trajectory = DashedLine(start_pos, end_pos, color=WHITE, dash_length=0.1)
+        # Trajectory trace — built up as the charge moves (contrail style)
+        trace = TracedPath(charge_group.get_center, stroke_color=WHITE, stroke_width=2)
         
         # Current trackers for each anode
         current_trackers = [ValueTracker(0) for _ in range(num_anodes)]
@@ -137,10 +137,7 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
             run_time=0.5
         )
         
-        self.play(
-            Create(trajectory),
-            run_time=0.5
-        )
+        self.add(trace)
         
         self.play(
             Write(current_title),
@@ -228,7 +225,7 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         self.wait(1)
         
         # Show position reconstruction concept
-        self.play(FadeOut(velocity_arrow), FadeOut(trajectory))
+        self.play(FadeOut(velocity_arrow), FadeOut(trace))
         
         recon_text = Text(
             "Peak current → Charge passed closest to that anode!",

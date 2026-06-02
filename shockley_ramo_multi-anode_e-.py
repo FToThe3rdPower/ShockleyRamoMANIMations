@@ -384,5 +384,194 @@ class ShockleyRamoWeightingPotential_Center(Scene):
         self.wait(2)
 
 
+class ShockleyRamoMCP_eMinus(Scene):
+    """
+    Multi-anode detector viewed from the charge-collection side:
+    anodes at bottom, MCP exit at top. An electron drifts from the
+    MCP exit downward, freezes mid-flight so the audience can see
+    simultaneous induction on all anodes, then strikes and is collected
+    by a single anode. Induced-current bars grow downward (negative
+    direction) from a zero line — sign is communicated by bar direction,
+    not a hard-to-read minus symbol.
+    """
+
+    def construct(self):
+        num_anodes    = 5
+        anode_width   = 1.5
+        anode_height  = 0.35
+        anode_gap     = 0.25
+        detector_depth = 4.0
+        charge_radius  = 0.2
+        right_offset   = 1.5
+
+        total_width = num_anodes * anode_width + (num_anodes - 1) * anode_gap
+
+        anode_colors = [RED, ORANGE, YELLOW, GREEN, BLUE]
+
+        # ── Anodes at bottom ──────────────────────────────────────────
+        anodes = VGroup()
+        anode_labels = VGroup()
+        for i in range(num_anodes):
+            x_pos = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap) + right_offset
+            anode = Rectangle(
+                width=anode_width, height=anode_height,
+                fill_color=anode_colors[i], fill_opacity=0.8, stroke_color=WHITE,
+            ).move_to([x_pos, -detector_depth/2, 0])
+            anodes.add(anode)
+            anode_labels.add(MathTex(f"A_{i+1}", font_size=24).next_to(anode, DOWN, buff=0.1))
+
+        # ── MCP exit at top ───────────────────────────────────────────
+        mcp = Rectangle(
+            width=total_width + 1, height=anode_height,
+            fill_color=GRAY, fill_opacity=0.8, stroke_color=WHITE,
+        ).move_to([right_offset, detector_depth/2, 0])
+        mcp_label = Text("MCP Exit", font_size=22).next_to(mcp, UP, buff=0.1)
+        title = Text("Multi-Anode Detector: Position Sensing", font_size=22).next_to(mcp_label, UP, buff=0.1)
+
+        equation = MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w,k}", font_size=32).move_to([-6.0, 2.4, 0])
+
+        # ── Induced-current bars (bidirectional, grow downward) ───────
+        current_trackers = [ValueTracker(0) for _ in range(num_anodes)]
+        bar_width      = 0.45
+        bar_gap        = 0.35
+        max_bar_height = 2.5
+        zero_line_y    = 1.0   # bars grow downward from this y
+        bar_x_offset   = -2.6
+        current_label_offset = -6.0
+
+        def get_bar_x(i):
+            return -total_width/2 - anode_width/2 + i * (bar_width + bar_gap) + bar_x_offset
+
+        def create_bar(i):
+            val    = current_trackers[i].get_value()
+            height = max(0.01, abs(val) * max_bar_height)
+            bar = Rectangle(
+                width=bar_width, height=height,
+                fill_color=anode_colors[i], fill_opacity=0.8, stroke_color=WHITE,
+            )
+            # Positive value (electron approaching) → bar grows down; negative → grows up
+            direction = 1 if val >= 0 else -1
+            bar.move_to([get_bar_x(i), zero_line_y - direction * height / 2, 0])
+            return bar
+
+        current_bars = VGroup(*[always_redraw(lambda i=i: create_bar(i)) for i in range(num_anodes)])
+
+        bar_left  = get_bar_x(0) - bar_width / 2
+        bar_right = get_bar_x(num_anodes - 1) + bar_width / 2
+        zero_line  = Line([bar_left, zero_line_y, 0], [bar_right, zero_line_y, 0],
+                          color=WHITE, stroke_width=1.5)
+        zero_label = MathTex("0", font_size=18).next_to(zero_line, LEFT, buff=0.1)
+        current_title = Text("Induced Currents", font_size=22).move_to(
+            [current_label_offset, zero_line_y + 0.55, 0]
+        )
+
+        # ── Charge & trajectory ───────────────────────────────────────
+        charge = Circle(radius=charge_radius, fill_color=YELLOW, fill_opacity=1,
+                        stroke_color=YELLOW, stroke_width=2)
+        charge_symbol = MathTex("-", font_size=20, color=BLACK).move_to(charge)
+        charge_group  = VGroup(charge, charge_symbol)
+
+        # Target anode A2 (i=1): one step left of centre — shows position sensitivity
+        target_i = 1
+        target_x  = -total_width/2 + anode_width/2 + target_i * (anode_width + anode_gap) + right_offset
+        target_y  = -detector_depth/2 + anode_height/2 + charge_radius
+
+        start_pos = np.array([right_offset, detector_depth/2 - 0.3, 0])
+        end_pos   = np.array([target_x, target_y, 0])
+
+        # Freeze at the point where the trajectory crosses y = 0 (mid-detector)
+        t_mid      = start_pos[1] / (start_pos[1] - end_pos[1])
+        freeze_pos = start_pos + t_mid * (end_pos - start_pos)
+
+        charge_group.move_to(start_pos)
+
+        trace = TracedPath(charge_group.get_center, stroke_color=WHITE, stroke_width=2)
+
+        velocity_arrow = always_redraw(
+            lambda: Arrow(
+                charge_group.get_center(),
+                charge_group.get_center() + normalize(end_pos - start_pos) * 0.8,
+                buff=0, color=GREEN, stroke_width=2, max_tip_length_to_length_ratio=0.2,
+            )
+        )
+
+        def calculate_currents(charge_pos):
+            currents = []
+            for i in range(num_anodes):
+                ax = -total_width/2 + anode_width/2 + i * (anode_width + anode_gap) + right_offset
+                ay = -detector_depth/2   # anodes at bottom
+                dx, dy = charge_pos[0] - ax, charge_pos[1] - ay
+                r_sq = dx**2 + dy**2 + 0.1
+                E_w_mag = 1.0 / (r_sq + 0.5)
+                E_w_dir = np.array([ax - charge_pos[0], ay - charge_pos[1], 0])
+                E_w_dir /= (np.linalg.norm(E_w_dir) + 0.01)
+                v_dir = normalize(end_pos - start_pos)
+                current = np.dot(v_dir, E_w_dir) * E_w_mag
+                if (charge_pos[0] < -total_width/2 - 0.3 + right_offset or
+                        charge_pos[0] > total_width/2 + 0.3 + right_offset):
+                    current = 0
+                if (charge_pos[1] > detector_depth/2 - 0.3 or
+                        charge_pos[1] < -detector_depth/2 + 0.3):
+                    current *= 0.3
+                currents.append(current)
+            return currents
+
+        def update_currents(_):
+            for i, v in enumerate(calculate_currents(charge_group.get_center())):
+                current_trackers[i].set_value(v)
+
+        # ── Build scene ───────────────────────────────────────────────
+        self.play(Write(equation), run_time=0.5)
+        self.play(Write(title), run_time=0.5)
+        self.play(
+            *[Create(a) for a in anodes],
+            *[Write(l) for l in anode_labels],
+            run_time=1,
+        )
+        self.play(Create(mcp), Write(mcp_label), run_time=0.5)
+        self.play(
+            Write(current_title),
+            Create(zero_line), Write(zero_label),
+            *[Create(b) for b in current_bars],
+            run_time=0.5,
+        )
+        self.play(FadeIn(charge_group), run_time=0.3)
+        self.play(GrowArrow(velocity_arrow), run_time=0.3)
+        self.add(trace)
+
+        # Phase 1: drift to mid-detector
+        charge_group.add_updater(update_currents)
+        self.play(charge_group.animate.move_to(freeze_pos), run_time=3, rate_func=linear)
+
+        # Freeze — show all anodes seeing non-zero induced current simultaneously
+        self.wait(3)
+
+        # Phase 2: continue to target anode
+        self.play(charge_group.animate.move_to(end_pos), run_time=3, rate_func=linear)
+        charge_group.remove_updater(update_currents)
+
+        # Collection: flash the hit anode, absorb the charge
+        self.play(
+            anodes[target_i].animate.set_fill(WHITE, opacity=1),
+            FadeOut(charge_group),
+            run_time=0.25,
+        )
+        self.play(
+            anodes[target_i].animate.set_fill(anode_colors[target_i], opacity=0.8),
+            run_time=0.3,
+        )
+
+        for t in current_trackers:
+            t.set_value(0)
+        self.play(FadeOut(velocity_arrow), FadeOut(trace), run_time=0.5)
+
+        recon_text = Text(
+            "Peak current → Charge passed closest to that anode!",
+            font_size=24, color=YELLOW,
+        ).move_to([right_offset, -2.75, 0])
+        self.play(Write(recon_text), run_time=1)
+        self.wait(2)
+
+
 if __name__ == "__main__":
     pass

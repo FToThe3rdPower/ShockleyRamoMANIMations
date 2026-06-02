@@ -485,17 +485,17 @@ class ShockleyRamoMCP_eMinus(Scene):
 
         charge_group.move_to(start_pos)
 
-        trail = VGroup()
-        trail_state = {"last": None}
+        # Dots are added directly to the scene so they persist independently of animations
+        trail_dots = []
+        trail_last = [None]
 
-        def add_trail_dot(m):
-            cur = np.array(charge_group.get_center())
-            prev = trail_state["last"]
-            if prev is None or np.linalg.norm(cur - prev) >= 0.15:
-                m.add(Dot(radius=0.05, color=WHITE, fill_opacity=0.85).move_to(cur))
-                trail_state["last"] = cur.copy()
-
-        trail.add_updater(add_trail_dot)
+        def build_trail(_):
+            cur = charge_group.get_center().copy()
+            if trail_last[0] is None or np.linalg.norm(cur - trail_last[0]) >= 0.15:
+                dot = Dot(radius=0.05, color=WHITE, fill_opacity=0.85).move_to(cur)
+                trail_dots.append(dot)
+                self.add(dot)
+                trail_last[0] = np.array(cur)
 
         velocity_arrow = always_redraw(
             lambda: Arrow(
@@ -547,7 +547,7 @@ class ShockleyRamoMCP_eMinus(Scene):
         )
         self.play(FadeIn(charge_group), run_time=0.3)
         self.play(GrowArrow(velocity_arrow), run_time=0.3)
-        self.add(trail)
+        self.add_updater(build_trail)
 
         # Phase 1: drift to mid-detector
         charge_group.add_updater(update_currents)
@@ -565,7 +565,7 @@ class ShockleyRamoMCP_eMinus(Scene):
         # Phase 2: continue to target anode
         self.play(charge_group.animate.move_to(end_pos), run_time=3, rate_func=linear)
         charge_group.remove_updater(update_currents)
-        trail.clear_updaters()
+        self.remove_updater(build_trail)
 
         # Collection: flash the hit anode, absorb the charge
         self.play(
@@ -580,9 +580,9 @@ class ShockleyRamoMCP_eMinus(Scene):
 
         for t in current_trackers:
             t.set_value(0)
-        self.play(FadeOut(velocity_arrow), FadeOut(trail), run_time=0.5)
+        self.play(FadeOut(velocity_arrow), FadeOut(VGroup(*trail_dots)), run_time=0.5)
 
-        recon_text = MathTex(r"\text{Only anode} A_2 \text{ Collects the charge}", font_size=32).move_to([right_offset, -2.8, 0])
+        recon_text = MathTex(r"\text{Only anode } A_2 \text{ Collects the charge}", font_size=32, color=YELLOW).move_to([right_offset, -2.8, 0])
         self.play(Write(recon_text), run_time=1)
         self.wait(2)
 

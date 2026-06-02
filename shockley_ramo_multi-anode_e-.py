@@ -112,7 +112,7 @@ class ShockleyRamoMultiAnodeDetector_eMinus(Scene):
         ])
         
         # equation on the left of the itle which is just above anodes (center); 
-        equation = MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w,k}", font_size=32).move_to([-6.0, 2.4, 0])
+        equation = MathTex(r"I_k = q \vec{v} \cdot \vec{E}_w", font_size=32).move_to([-6.0, 2.4, 0])
         title = Text("Multi-Anode Detector: Position Sensing", font_size=22).next_to(anode_labels, UP, buff=0.1)
         
         # Legend for current display (right panel, above bars)
@@ -424,11 +424,11 @@ class ShockleyRamoMCP_eMinus(Scene):
         mcp = Rectangle(
             width=total_width + 1, height=anode_height,
             fill_color=GRAY, fill_opacity=0.8, stroke_color=WHITE,
-        ).move_to([right_offset, detector_depth/2, 0])
-        mcp_label = Text("MCP Exit", font_size=22).next_to(mcp, UP, buff=0.1)
-        title = Text("Multi-Anode Detector: Position Sensing", font_size=22).next_to(mcp_label, UP, buff=0.1)
+        ).move_to([right_offset, detector_depth/2 - 0.4, 0])
+        mcp_label = Text("MCP", font_size=22).next_to(mcp, UP, buff=0.1)
+        title = Text("Multi-Anode Detector: Position Sensing", font_size=22).next_to(mcp_label, UP, buff=0.35)
 
-        equation = MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w,k}", font_size=32).move_to([-6.0, 2.4, 0])
+        equation = MathTex(r"I_k = q \vec{v} \cdot \vec{E}_{w}", font_size=32).move_to([-6.0, 2.4, 0])
 
         # ── Induced-current bars (bidirectional, grow downward) ───────
         current_trackers = [ValueTracker(0) for _ in range(num_anodes)]
@@ -476,7 +476,7 @@ class ShockleyRamoMCP_eMinus(Scene):
         target_x  = -total_width/2 + anode_width/2 + target_i * (anode_width + anode_gap) + right_offset
         target_y  = -detector_depth/2 + anode_height/2 + charge_radius
 
-        start_pos = np.array([right_offset, detector_depth/2 - 0.3, 0])
+        start_pos = np.array([right_offset, detector_depth/2 - 0.8, 0])
         end_pos   = np.array([target_x, target_y, 0])
 
         # Freeze at the point where the trajectory crosses y = 0 (mid-detector)
@@ -485,7 +485,17 @@ class ShockleyRamoMCP_eMinus(Scene):
 
         charge_group.move_to(start_pos)
 
-        trace = TracedPath(charge_group.get_center, stroke_color=WHITE, stroke_width=2)
+        trail = VGroup()
+        trail_state = {"last": None}
+
+        def add_trail_dot(m):
+            cur = np.array(charge_group.get_center())
+            prev = trail_state["last"]
+            if prev is None or np.linalg.norm(cur - prev) >= 0.15:
+                m.add(Dot(radius=0.05, color=WHITE, fill_opacity=0.85).move_to(cur))
+                trail_state["last"] = cur.copy()
+
+        trail.add_updater(add_trail_dot)
 
         velocity_arrow = always_redraw(
             lambda: Arrow(
@@ -537,18 +547,25 @@ class ShockleyRamoMCP_eMinus(Scene):
         )
         self.play(FadeIn(charge_group), run_time=0.3)
         self.play(GrowArrow(velocity_arrow), run_time=0.3)
-        self.add(trace)
+        self.add(trail)
 
         # Phase 1: drift to mid-detector
         charge_group.add_updater(update_currents)
         self.play(charge_group.animate.move_to(freeze_pos), run_time=3, rate_func=linear)
 
         # Freeze — show all anodes seeing non-zero induced current simultaneously
-        self.wait(3)
+        freeze_text = Text(
+            'All nearby anodes "see" the charge',
+            font_size=22, color=YELLOW,
+        ).move_to([current_label_offset, zero_line_y - 1, 0]) # y used to be zero_line_y - max_bar_height - 0.55
+        self.play(Write(freeze_text), run_time=1)
+        self.wait(2)
+        self.play(FadeOut(freeze_text), run_time=0.5)
 
         # Phase 2: continue to target anode
         self.play(charge_group.animate.move_to(end_pos), run_time=3, rate_func=linear)
         charge_group.remove_updater(update_currents)
+        trail.clear_updaters()
 
         # Collection: flash the hit anode, absorb the charge
         self.play(
@@ -563,12 +580,9 @@ class ShockleyRamoMCP_eMinus(Scene):
 
         for t in current_trackers:
             t.set_value(0)
-        self.play(FadeOut(velocity_arrow), FadeOut(trace), run_time=0.5)
+        self.play(FadeOut(velocity_arrow), FadeOut(trail), run_time=0.5)
 
-        recon_text = Text(
-            "Peak current → Charge passed closest to that anode!",
-            font_size=24, color=YELLOW,
-        ).move_to([right_offset, -2.75, 0])
+        recon_text = MathTex(r"\text{Only anode} A_2 \text{ Collects the charge}", font_size=32).move_to([right_offset, -2.8, 0])
         self.play(Write(recon_text), run_time=1)
         self.wait(2)
 
